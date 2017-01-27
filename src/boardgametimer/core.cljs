@@ -1,5 +1,5 @@
 (ns boardgametimer.core
-  (:require ))
+  (:require [boardgametimer.common :as c]))
 
 (enable-console-print!)
 
@@ -13,4 +13,4 @@
   ;; optionally touch your app-state to force rerendering depending on
   ;; your application
   ;; (swap! app-state update-in [:__figwheel_counter] inc)
-)
+  )
