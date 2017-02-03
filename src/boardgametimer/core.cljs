@@ -10,8 +10,17 @@
 
 (defn create-game-view []
   [:div
-   [:button {:on-click #(swap! app-state assoc :game (c/create-game (* 30 60 1000)))}
-    "Nyt spil"]])
+   [:div "Minutter per spiller"
+    [:input {:on-change #(swap! app-state assoc-in [:ui-state :ms-per-player] (-> % .-target .-value))
+             :type      :text
+             :value     (get-in @app-state [:ui-state :ms-per-player])}]]
+   [:div
+    (let [ms-per-player (->> (get-in @app-state [:ui-state :ms-per-player])
+                             (js/parseInt)
+                             (* 60 1000))]
+      [:button {:disabled (not (re-matches #"\W*\d+\W*" (or (get-in @app-state [:ui-state :ms-per-player]) "")))
+                :on-click #(swap! app-state assoc :game (c/create-game ms-per-player))}
+       "Nyt spil"])]])
 
 (defn players-view [{:keys [game/first-player game/current-player game/ms-per-player game/players] :as game}]
   (->> players
@@ -36,17 +45,17 @@
 (defn add-players-view [{:keys [game/first-player] :as game}]
   [:div
    [:div
-    [:input {:on-change #(swap! app-state assoc-in [:ui-state :text] (-> % .-target .-value))
+    [:input {:on-change #(swap! app-state assoc-in [:ui-state :player] (-> % .-target .-value))
              :type      :text
-             :value     (get-in @app-state [:ui-state :text])}]
-    [:button {:on-click #(swap! app-state update :game c/add-player (c/create-player (get-in @app-state [:ui-state :text])))}
+             :value     (get-in @app-state [:ui-state :player])}]
+    [:button {:on-click #(swap! app-state update :game c/add-player (c/create-player (get-in @app-state [:ui-state :player])))}
      "Tilføj spiller"]]
 
    [:div {:style {:color :black}}
     (players-view game)]
 
    [:div
-    [:button {:disabled (or (nil? first-player) (not (c/out-of-round? game)))
+    [:button {:disabled (not (and first-player (c/out-of-round? game)))
               :on-click #(swap! app-state update :game c/start-round)}
      "Start spil"]]])
 
@@ -60,7 +69,7 @@
               :on-click #(swap! app-state update :game c/toggle-pause)}
      (if (c/paused? game) "Play" "Pause")]
 
-    [:button {:disabled (or (nil? first-player) (not (c/out-of-round? game)))
+    [:button {:disabled (not (c/out-of-round? game))
               :on-click #(swap! app-state update :game c/start-round)}
      "Næste runde"]]
 
