@@ -13,7 +13,6 @@
   (into {} (for [[k v] coll] [k (f v)])))
 
 (defn create-game [ms-per-player game-type]
- (prn game-type)
   {:game/players                            {}
    :game/round                              0
    :game/ms-per-player                      ms-per-player

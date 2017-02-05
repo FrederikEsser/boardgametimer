@@ -71,6 +71,26 @@
                 :on-click #(swap! app-state assoc :game (c/create-game ms-per-player game-type))}
        "Nyt spil"])]])
 
+(defn current-player-view [{:keys [game/current-player game/ms-per-player game/players game/current-spent] :as game}]
+  (let [{:keys [player/name player/ms-spent]} (get players current-player)]
+    [:div {:style {:display :flex :flex-direction :row}}
+     [:button {:style    {:width "120px" :height "120px" :font-size "24px"}
+               :disabled (not (c/in-round? game))
+               :on-click #(swap! app-state update :game (comp set-current-spent c/player-action-done))}
+      "Næste"]
+
+     [:div {:style {:display   :flex :flex-direction :column
+                    :font-size "48px"
+                    :width     "200px" :align-items :center}}
+      [:div {:style {:width "100px"}} name]
+      (when current-player
+        [:div (i/format (- ms-per-player ms-spent current-spent))])]
+
+     [:button {:style    {:width "120px" :height "120px" :font-size "24px"}
+               :disabled (not (c/in-round? game))
+               :on-click #(swap! app-state update :game (comp set-current-spent c/player-action-pass))}
+      "Pas"]]))
+
 (defn players-view [{:keys [game/first-player game/current-player game/ms-per-player game/players game/current-spent] :as game}]
   (->> players
        vals
@@ -84,15 +104,7 @@
                    {:color :white :background :green :margin-right "5px"} "1st"]
                   [:div {:style {:width       "100px"
                                  :font-weight (when active? :bold)}} name]
-                  [:div (i/format (- ms-per-player ms-spent (when current-player? current-spent)))]
-                  (when current-player?
-                    [:button {:disabled (not (c/in-round? game))
-                              :on-click #(swap! app-state update :game (comp set-current-spent c/player-action-done))}
-                     "Næste"])
-                  (when current-player?
-                    [:button {:disabled (not (c/in-round? game))
-                              :on-click #(swap! app-state update :game (comp set-current-spent c/player-action-pass))}
-                     "Pas"])])))
+                  [:div (i/format (- ms-per-player ms-spent (when current-player? current-spent)))]])))
        (concat [])))
 
 (defn add-players-view [{:keys [game/first-player] :as game}]
@@ -114,7 +126,10 @@
 
 (defn in-game-view [{:keys [game/first-player] :as game}]
   [:div
-   [:div {:style {:color :black}}
+   [:div {:style {:color :black  :margin-bottom "15px"}}
+    (current-player-view game)]
+
+   [:div {:style {:color :black :margin-bottom "15px"}}
     (players-view game)]
 
    [:div
