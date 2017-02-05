@@ -10,6 +10,7 @@
   (t/in-millis (t/interval t1 t2)))
 
 (defn format [ms]
-  (if (>= ms 0)
-    (f/unparse (f/formatter "m:ss") (c/from-long ms))
-    (f/unparse (f/formatter "-m:ss") (c/from-long (- ms)))))
+  (let [rounded-ms (- ms (mod ms 1000))]
+    (if (>= rounded-ms 0)
+      (f/unparse (f/formatter "m:ss") (c/from-long rounded-ms))
+      (f/unparse (f/formatter "-m:ss") (c/from-long (- rounded-ms))))))
