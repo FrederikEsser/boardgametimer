@@ -8,6 +8,26 @@
 (defonce app-state (r/atom {:ui-state {}
                             :game     {}}))
 
+(defn- icon [{:keys [icon-size icon-disabled] :as opts} style text]
+  (let [trimmed-opts (dissoc opts :icon-size
+                             :icon-disabled
+                             :post-label)]                  ;; React throws warnings on elements receiving unknown props (read: html elements receiving unknown attributes), such as <span icon-size="large"> : https://fb.me/react-unknown-prop
+    [:span (merge-with merge
+                       {:style {:position      :relative
+                                :font-size     12
+                                :border-radius 2
+                                :border        "1px solid transparent"
+                                :font-family   "Roboto Mono"
+                                :box-shadow    "0 2px 2px 0 rgba(80,80,80,.14),0 3px 1px -2px rgba(80,80,80,.2),0 1px 5px 0 rgba(80,80,80,.12)"
+                                :padding       "0px 3px 0px 3px"}}
+                       {:style style}
+                       trimmed-opts
+                       (when icon-disabled {:style {:box-shadow :none
+                                                    :background :white
+                                                    ;:text-decoration :line-through
+                                                    :border     "1px dotted grey"
+                                                    :color      :grey}})) text]))
+
 (defn set-current-spent [{:keys [game/start-time] :as game}]
   (let [current-spent (when (c/in-round? game)
                         (i/interval-in-millis start-time (i/now)))]
@@ -56,12 +76,15 @@
        vals
        (sort-by :player/index)
        (mapv (fn [{:keys [player/name player/ms-spent player/active?]}]
-               (let [current-player? (= name current-player)]
-                 [:div
-                  (when (nil? first-player)
-                    [:button {:on-click #(swap! app-state update :game c/set-first-player name)}
-                     "Første spiller"])
-                  (str name " " (i/format (- ms-per-player ms-spent (when current-player? current-spent))) " " active?)
+               (let [current-player? (= name current-player)
+                     first-player? (= name first-player)]
+                 [:div {:style {:display :flex :flex-direction :row}}
+                  [icon {:on-click      #(swap! app-state update :game c/set-first-player name)
+                         :icon-disabled (not first-player?)}
+                   {:color :white :background :green :margin-right "5px"} "1st"]
+                  [:div {:style {:width       "100px"
+                                 :font-weight (when active? :bold)}} name]
+                  [:div (i/format (- ms-per-player ms-spent (when current-player? current-spent)))]
                   (when current-player?
                     [:button {:disabled (not (c/in-round? game))
                               :on-click #(swap! app-state update :game (comp set-current-spent c/player-action-done))}
@@ -108,7 +131,7 @@
     [:div (cond (empty? game) (create-game-view)
                 (= 0 round) (add-players-view game)
                 :else (in-game-view game))
-     [:div {:style {:color :red}} game]]))
+     #_[:div {:style {:color :red}} game]]))
 
 (r/render-component [my-view] (js/document.getElementById "app"))
 
