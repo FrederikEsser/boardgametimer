@@ -12,10 +12,12 @@
   [f coll]
   (into {} (for [[k v] coll] [k (f v)])))
 
-(defn create-game [ms-per-player]
-  {:game/players {}
-   :game/round   0
-   :game/ms-per-player ms-per-player})
+(defn create-game [ms-per-player game-type]
+ (prn game-type)
+  {:game/players                            {}
+   :game/round                              0
+   :game/ms-per-player                      ms-per-player
+   :game/change-first-player-on-first-pass? (= :terra-mystica game-type)})
 
 (defn create-player [name]
   {:player/name     name
@@ -68,7 +70,7 @@
         (start-player (:player/name (get-next-player game))))
     game))
 
-(defn player-action-pass [{:keys [game/players game/current-player] :as game}]
+(defn player-action-pass [{:keys [game/players game/current-player game/change-first-player-on-first-pass?] :as game}]
   (if (in-round? game)
     (let [first-pass? (->> players
                            vals
@@ -77,7 +79,7 @@
                     stop-player
                     (assoc-in [:game/players current-player :player/active?] false))]
       (cond-> game'
-              first-pass? (assoc :game/first-player current-player)
+              (and first-pass? change-first-player-on-first-pass?) (assoc :game/first-player current-player)
               true (start-player (:player/name (get-next-player game')))))
     game))
 

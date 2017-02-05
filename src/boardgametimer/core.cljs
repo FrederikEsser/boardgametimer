@@ -25,12 +25,30 @@
     [:input {:on-change #(swap! app-state assoc-in [:ui-state :ms-per-player] (-> % .-target .-value))
              :type      :text
              :value     (get-in @app-state [:ui-state :ms-per-player])}]]
+
+   [:div "Terra Mystica"
+    [:input {:type     "radio"
+             :name     :game-type
+             :id       :game-type-tm
+             :value    :terra-mystica
+             :on-click #(swap! app-state assoc-in [:ui-state :game-type] :terra-mystica)
+             :checked  (= :terra-mystica (get-in @app-state [:ui-state :game-type]))}]]
+   [:div "Caverna"
+    [:input {:type     "radio"
+             :name     :game-type
+             :id       :game-type-cav
+             :value    :caverna
+             :on-click #(swap! app-state assoc-in [:ui-state :game-type] :caverna)
+             :checked  (= :caverna (get-in @app-state [:ui-state :game-type]))}]]
+
    [:div
-    (let [ms-per-player (->> (get-in @app-state [:ui-state :ms-per-player])
-                             (js/parseInt)
-                             (* 60 1000))]
-      [:button {:disabled (not (re-matches #"\W*\d+\W*" (or (get-in @app-state [:ui-state :ms-per-player]) "")))
-                :on-click #(swap! app-state assoc :game (c/create-game ms-per-player))}
+    (let [ms-per-player (when (re-matches #"\W*\d+\W*" (or (get-in @app-state [:ui-state :ms-per-player]) ""))
+                          (->> (get-in @app-state [:ui-state :ms-per-player])
+                               (js/parseInt)
+                               (* 60 1000)))
+          game-type (get-in @app-state [:ui-state :game-type])]
+      [:button {:disabled (or (not ms-per-player) (not game-type))
+                :on-click #(swap! app-state assoc :game (c/create-game ms-per-player game-type))}
        "Nyt spil"])]])
 
 (defn players-view [{:keys [game/first-player game/current-player game/ms-per-player game/players game/current-spent] :as game}]
@@ -83,15 +101,14 @@
 
     [:button {:disabled (not (c/out-of-round? game))
               :on-click (fn [] (swap! app-state update :game c/start-round) (tick!))}
-     "Næste runde"]]
-
-   #_[:div {:style {:color :red}} game]])
+     "Næste runde"]]])
 
 (defn my-view []
   (let [{:keys [game/round] :as game} (:game @app-state)]
-    (cond (empty? game) (create-game-view)
-          (= 0 round) (add-players-view game)
-          :else (in-game-view game))))
+    [:div (cond (empty? game) (create-game-view)
+                (= 0 round) (add-players-view game)
+                :else (in-game-view game))
+     [:div {:style {:color :red}} game]]))
 
 (r/render-component [my-view] (js/document.getElementById "app"))
 
